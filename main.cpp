@@ -11,16 +11,16 @@ extern "C" {
 
 #define SCREEN_WIDTH	640
 #define SCREEN_HEIGHT	480
-#define STARTPOSITIONY  0
+#define STARTPOSITIONY  SCREEN_HEIGHT/2-35
 #define STARTPOSITIONX 0
 #define DEFAULTJUMP    5
-#define DEFAULTSPEED   4
+#define DEFAULTSPEED   10
 #define GRAVITY   5
 
 
 
-// narysowanie napisu txt na powierzchni screen, zaczynajπc od punktu (x, y)
-// charset to bitmapa 128x128 zawierajπca znaki
+// narysowanie napisu txt na powierzchni screen, zaczynajƒÖc od punktu (x, y)
+// charset to bitmapa 128x128 zawierajƒÖca znaki
 // draw a text txt on surface screen, starting from the point (x, y)
 // charset is a 128x128 bitmap containing character images
 void DrawString(SDL_Surface* screen, int x, int y, const char* text,
@@ -47,7 +47,7 @@ void DrawString(SDL_Surface* screen, int x, int y, const char* text,
 
 
 // narysowanie na ekranie screen powierzchni sprite w punkcie (x, y)
-// (x, y) to punkt úrodka obrazka sprite na ekranie
+// (x, y) to punkt ≈õrodka obrazka sprite na ekranie
 // draw a surface sprite on a surface screen in point (x, y)
 // (x, y) is the center of sprite on screen
 void DrawSurface(SDL_Surface* screen, SDL_Surface* sprite, int x, int y) {
@@ -69,8 +69,8 @@ void DrawPixel(SDL_Surface* surface, int x, int y, Uint32 color) {
 };
 
 
-// rysowanie linii o d≥ugoúci l w pionie (gdy dx = 0, dy = 1) 
-// bπdü poziomie (gdy dx = 1, dy = 0)
+// rysowanie linii o d≈Çugo≈õci l w pionie (gdy dx = 0, dy = 1) 
+// bƒÖd≈∫ poziomie (gdy dx = 1, dy = 0)
 // draw a vertical (when dx = 0, dy = 1) or horizontal (when dx = 1, dy = 0) line
 void DrawLine(SDL_Surface* screen, int x, int y, int l, int dx, int dy, Uint32 color) {
 	for (int i = 0; i < l; i++) {
@@ -81,7 +81,7 @@ void DrawLine(SDL_Surface* screen, int x, int y, int l, int dx, int dy, Uint32 c
 };
 
 
-// rysowanie prostokπta o d≥ugoúci bokÛw l i k
+// rysowanie prostokƒÖta o d≈Çugo≈õci bok√≥w l i k
 // draw a rectangle of size l by k
 void DrawRectangle(SDL_Surface* screen, int x, int y, int l, int k,
 	Uint32 outlineColor, Uint32 fillColor) {
@@ -100,23 +100,32 @@ void goLeft(int& mapPosX,  double& speed, SDL_Rect& camera) {
 	mapPosX -= speed;
 	camera.x -= speed;
 	if (camera.x <= 0)
-		camera.x = 4000 - 640;
+		camera.x = 4000 - SCREEN_WIDTH;
 }
 
 void goRight(int& mapPosX,  double& speed, SDL_Rect& camera ) {
 	mapPosX += speed;
 	camera.x += speed;
-	if (camera.x >= 4000 - 640)
+	if (camera.x >= 4000 - SCREEN_WIDTH)
 		camera.x = 0;
 }
 
 void goUp(int& unicornPosY, int jumpDistance, SDL_Rect& camera) {
 
-	camera.y -= jumpDistance;
+	if (camera.y == 0) {
+		unicornPosY -= jumpDistance;
+	}
+	else {
+		camera.y -= jumpDistance;
+	}
+	if (unicornPosY <= -(STARTPOSITIONY - SCREEN_HEIGHT/2))
+		unicornPosY = -(STARTPOSITIONY - SCREEN_HEIGHT / 2);
 
 }
 void goDown(int& unicornPosY, int jumpDistance, int checkJump, SDL_Rect& camera) {
-
+	if (unicornPosY <= STARTPOSITIONY) {
+		unicornPosY += jumpDistance;
+	}else
 		camera.y += jumpDistance;
 
 }
@@ -150,14 +159,20 @@ void goLeftAdvance(SDL_Rect& camera, int& mapPosX,  double unicornSpeed) {
 }
 
 
-int fallingDown(SDL_Rect camera, int floor, int jump, int hang) {
-	if (!jump && camera.y < floor && !hang) {
-			camera.y += GRAVITY;
-			if (camera.y > floor) {
-				camera.y = floor;
+void fallingDown(SDL_Rect& camera, int floor, int jump, int hang, int& unicornPosY) {
+	if (!jump && camera.y < floor && !hang && unicornPosY == STARTPOSITIONY) {
+		camera.y += GRAVITY;
+		if (camera.y > floor) {
+			camera.y = floor;
+		}
+
+	}
+	else if (camera.y == 0 && unicornPosY <= STARTPOSITIONY && !jump && !hang) {
+			unicornPosY += GRAVITY;
+			if (unicornPosY >STARTPOSITIONY) {
+				unicornPosY = STARTPOSITIONY;
 			}
 	}
-	return camera.y;
 }
 
 void accelerating( double& unicornSpeed, double worldTime, long double acceleration) {
@@ -177,11 +192,11 @@ void dash( SDL_Rect& camera, int dashSpeed) {
 void collisionDetection(SDL_Rect camera, int& floor, int& ceilling, int& passage) {
 
 	if ((camera.x >= 0 && camera.x <= 1550) || (camera.x >= 2800 && camera.x <= 3360))
-		ceilling = 50, passage = 0;
+		ceilling = 400, passage = 0;
 	else if (camera.x >= 1840 && camera.x <= 2130)
-		ceilling = 110, passage = 0;
+		ceilling = 460, passage = 0;
 	else if (camera.x >= 2150 && camera.x <= 2570)
-		ceilling = -30, passage = 0;
+		ceilling = 320, passage = 0;
 	else if (camera.x >= 1560 && camera.x <= 1830)
 		passage = 1;
 	else if (camera.x >= 2580 && camera.x <= 2790)
@@ -189,58 +204,58 @@ void collisionDetection(SDL_Rect camera, int& floor, int& ceilling, int& passage
 
 	if (camera.y > ceilling) {
 		if ((camera.x >= 0 && camera.x <= 715) || (camera.x >= 990 && camera.x <= 1155) || (camera.x >= 1530 && camera.x <= 1600) || (camera.x >= 1780 && camera.x <= 1830) || (camera.x >= 2730 && camera.x <= 2770) || (camera.x >= 3250 && camera.x <= 3360))
-			floor = 295;
+			floor = 645;
 		else if ((camera.x >= 720 && camera.x <= 980) || (camera.x >= 2120 && camera.x <= 2480))
-			floor = 235;
+			floor = 585;
 		else if (camera.x >= 1165 && camera.x <= 1520)
-			floor = 170;
+			floor = 520;
 		else if (camera.x >= 1610 && camera.x <= 1770)
-			floor = 105;
+			floor = 455;
 		else if (camera.x >= 1860 && camera.x <= 2110)
-			floor = 175;
+			floor = 525;
 		else if (camera.x >= 2490 && camera.x <= 2720)
-			floor = 75;
+			floor = 425;
 		else if (camera.x >= 2790 && camera.x <= 3240)
-			floor = 125;
+			floor = 475;
 	}
 
 	if (camera.y < ceilling) {
 		if ((camera.x >= 0 && camera.x <= 565) || (camera.x >= 735 && camera.x <= 900) || (camera.x >= 1330 && camera.x <= 1540) || (camera.x >= 2820 && camera.x <= 2905) || (camera.x >= 3115 && camera.x <= 3280) || (camera.x >= 3336 && camera.x <= 3360))
-			floor = -65;
+			floor = 285;
 		else if (camera.x >= 570 && camera.x <= 720)
-			floor = -125;
+			floor = 225;
 		else if (camera.x >= 930 && camera.x <= 1310)
-			floor = -180;
+			floor = 165;
 		else if ((camera.x >= 2040 && camera.x <= 2180) || (camera.x >= 2280 && camera.x <= 2300) || (camera.x >= 2420 && camera.x <= 2435) || (camera.x >= 2480 && camera.x <= 2530))
-			floor = -110;
+			floor = 240;
 		else if ((camera.x >= 2230 && camera.x <= 2270) || (camera.x >= 2440 && camera.x <= 2470))
-			floor = -150;
+			floor = 200;
 		else if (camera.x >= 2330 && camera.x <= 2410)
-			floor = -170;
+			floor = 180;
 		else if (camera.x >= 2930 && camera.x <= 3100)
-			floor = -130;
+			floor = 220;
 		else if (camera.x == 3310)
-			floor = -215;
+			floor = 135;
 		else if (camera.x >= 1860 && camera.x <= 1990)
-			floor = 0;
+			floor = 350;
 	
 	}
 
 	if (passage == 1) {
 		if (camera.x >= 1620 && camera.x <= 1770)
-			floor = 105;
+			floor = 455;
 		else
-			floor = 295;
+			floor = 645;
 	}
 	else if (passage == 2) {
 		if (camera.x >= 2570 && camera.x <= 2720)
-			floor = 75;
+			floor = 425;
 		else
-			floor = 295;
+			floor = 645;
 	}
 
 
-	if (((camera.y > floor) || (camera.y == ceilling)) && !passage) {
+	if ((camera.y > floor) || ((camera.y == ceilling) && !passage)) {
 		printf("%s", "error");
 		//	quit = 1;
 	}
@@ -277,11 +292,12 @@ int main(int argc, char** argv) {
 	SDL_Texture* scrtex;
 	SDL_Window* window;
 	SDL_Renderer* renderer;
+	SDL_Rect camera;
 
-	// okno konsoli nie jest widoczne, jeøeli chcemy zobaczyÊ
+	// okno konsoli nie jest widoczne, je≈ºeli chcemy zobaczyƒá
 	// komunikaty wypisywane printf-em trzeba w opcjach:
 	// project -> szablon2 properties -> Linker -> System -> Subsystem
-	// zmieniÊ na "Console"
+	// zmieniƒá na "Console"
 	// console window is not visible, to see the printf output
 	// the option:
 	// project -> szablon2 properties -> Linker -> System -> Subsystem
@@ -294,7 +310,7 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
-	// tryb pe≥noekranowy / fullscreen mode
+	// tryb pe≈Çnoekranowy / fullscreen mode
 //	rc = SDL_CreateWindowAndRenderer(0, 0, SDL_WINDOW_FULLSCREEN_DESKTOP,
 //	                                 &window, &renderer);
 	rc = SDL_CreateWindowAndRenderer(SCREEN_WIDTH, SCREEN_HEIGHT, 0,
@@ -320,7 +336,7 @@ int main(int argc, char** argv) {
 		SCREEN_WIDTH, SCREEN_HEIGHT);
 
 
-	// wy≥πczenie widocznoúci kursora myszy
+	// wy≈ÇƒÖczenie widoczno≈õci kursora myszy
 	SDL_ShowCursor(SDL_DISABLE);
 
 	// wczytanie obrazka cs8x8.bmp
@@ -336,7 +352,7 @@ int main(int argc, char** argv) {
 	};
 	SDL_SetColorKey(charset, true, 0x000000);
 
-	unicorn = SDL_LoadBMP("./unicorn.bmp");
+	unicorn = SDL_LoadBMP("./unicorn1.bmp");
 	if (unicorn == NULL) {
 		printf("SDL_LoadBMP(unicorn.bmp) error: %s\n", SDL_GetError());
 		SDL_FreeSurface(charset);
@@ -347,9 +363,9 @@ int main(int argc, char** argv) {
 		SDL_Quit();
 		return 1;
 	};
-	map = SDL_LoadBMP("./background1.bmp");
+	map = SDL_LoadBMP("./background2.bmp");
 	if (map == NULL) {
-		printf("SDL_LoadBMP(unicorn.bmp) error: %s\n", SDL_GetError());
+		printf("SDL_LoadBMP(unicorn1.bmp) error: %s\n", SDL_GetError());
 		SDL_FreeSurface(charset);
 		SDL_FreeSurface(screen);
 		SDL_DestroyTexture(scrtex);
@@ -375,9 +391,9 @@ int main(int argc, char** argv) {
 	worldTime = 0;
 	distance = 0;
 
-	SDL_Rect camera;
+	
 	camera.x = 0;
-	camera.y = 290;
+	camera.y = 645;
 	camera.w = 640;
 	camera.h = 480;
 
@@ -385,7 +401,7 @@ int main(int argc, char** argv) {
 		t2 = SDL_GetTicks();
 
 		// w tym momencie t2-t1 to czas w milisekundach,
-		// jaki uplyna≥ od ostatniego narysowania ekranu
+		// jaki uplyna≈Ç od ostatniego narysowania ekranu
 		// delta to ten sam czas w sekundach
 		// here t2-t1 is the time in milliseconds since
 		// the last screen was drawn
@@ -401,7 +417,7 @@ int main(int argc, char** argv) {
 
 		SDL_BlitSurface(map, &camera, screen, NULL);
 
-		DrawSurface(screen, unicorn, 46, SCREEN_HEIGHT/2-35);
+		DrawSurface(screen, unicorn, 46, unicornPosY);
 
 
 		// tekst informacyjny / info text
@@ -414,7 +430,7 @@ int main(int argc, char** argv) {
 		sprintf(text, "floor:%d", floor);
 		//	      "Esc - exit, \030 - faster, \031 - slower"
 		DrawString(screen, 10, SCREEN_HEIGHT - 110, text, charset);
-		sprintf(text, "camera x:%d", camera.x);
+		sprintf(text, "unicornPosY%d", unicornPosY);
 		//	      "Esc - exit, \030 - faster, \031 - slower"
 		DrawString(screen, 10, SCREEN_HEIGHT - 90, text, charset);
 
@@ -429,7 +445,7 @@ int main(int argc, char** argv) {
 		
 
 
-		// obs≥uga zdarzeÒ (o ile jakieú zasz≥y) / handling of events (if there were any)
+		// obs≈Çuga zdarze≈Ñ (o ile jakie≈õ zasz≈Çy) / handling of events (if there were any)
 		while (SDL_PollEvent(&event)) {
 			if (!advance) {
 				switch (event.type) {
@@ -526,7 +542,7 @@ int main(int argc, char** argv) {
 
 
 		collisionDetection(camera, floor, ceiling, passage);
-		camera.y = fallingDown(camera, floor, jump, hang);
+		fallingDown(camera, floor, jump, hang, unicornPosY);
 
 		if (advance) {
 			goLeftAdvance(camera, mapPosX, unicornSpeed);
